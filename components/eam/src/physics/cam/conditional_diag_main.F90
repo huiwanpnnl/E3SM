@@ -541,6 +541,12 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
             idx = pbuf_get_index('AST')  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
+        ! aerosol-cloud interactions
+
+        case('NPCCN')
+            idx = pbuf_get_index('NPCCN'); call pbuf_get_field( pbuf, idx, ptr2d )
+            arrayout(:,:) = ptr2d
+
         ! cloud microphysic
 
         case('DEI')
@@ -594,6 +600,10 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
 
         case ('CAPE')
           call compute_cape( state, pbuf, pcols, pver, arrayout(:,1) ) ! in, in, in, out
+
+
+        case ('NCIC')
+          call ncic_diag( state, pbuf, pcols, pver, arrayout )
 
         !-----------------------------------------------------------------------------------
         ! The following were added mostly for testing of the conditional diag functionality

@@ -1997,6 +1997,8 @@ subroutine tphysbc (ztodt,               &
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use lnd_infodata,    only: precip_downscaling_method
 
+    use misc_diagnostics,only: tmp_numliq_update_after_activation 
+
     implicit none
 
     !
@@ -2030,6 +2032,8 @@ subroutine tphysbc (ztodt,               &
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
     type(physics_ptend)   :: ptend_aero_sc    ! ptend for microp_aero on sub-columns
     type(physics_tend)    :: tend_sc          ! tend for sub-columns
+
+    type(physics_state)   :: state_actdiag    ! diagnostic only: state with npccn applied 
 
     integer :: nstep                          ! current timestep number
 
@@ -2636,6 +2640,10 @@ end if
           endif
           call cnd_diag_checkpoint( diag, 'CLDAER'//char_macmic_it, state, pbuf, cam_in, cam_out )
 
+          !-- only for diagnosing ncic issue +++
+          call tmp_numliq_update_after_activation( state, pbuf, cld_macmic_ztodt, state_actdiag ) 
+          call cnd_diag_checkpoint( diag, 'ACTDIAG'//char_macmic_it, state_actdiag, pbuf, cam_in, cam_out )
+          !-- only for diagnosing ncic issue ===
 
           call t_startf('microp_tend')
 

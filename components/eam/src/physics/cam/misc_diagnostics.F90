@@ -255,4 +255,98 @@ subroutine compute_cape( state, pbuf, pcols, pver, cape )
  end subroutine compute_cape
 !---------------------------
 
+subroutine ncic_diag( state, pbuf, pcols, pver, ncic )
+!----------------------------------------------------------------------
+! Purpose: diagnose in-cloud droplet number concentration (unit: 1/cc)
+! History: first version by Hui Wan, 2022-06
+!----------------------------------------------------------------------
+
+  use physics_types,  only: physics_state
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+  use physconst,      only: rair
+  use micro_mg_utils, only: mincld
+  use constituents,   only: cnst_get_ind
+
+  type(physics_state),intent(in),target:: state
+  type(physics_buffer_desc),pointer    :: pbuf(:)
+  integer,                  intent(in) :: pcols
+  integer,                  intent(in) :: pver
+  real(r8),                intent(out) :: ncic(pcols,pver)
+
+  integer :: ncol, ixnumliq
+
+  integer :: idx
+  real(r8), pointer :: liqcldf(:,:)  ! liquid cloud fraction 
+
+  real(r8) :: lcldm(pcols,pver)      ! liquid cloud fraction, clipped to mincld
+  real(r8) ::   rho(pcols,pver)      ! air density 
+
+  !-----------------------
+  ncol = state%ncol
+
+  ! Assume the liquid cloud fraction (liqcldf) equals the total stratiform cloud fraction (ast).
+  ! This assumption follows the subroutine micro_mg_cam:micro_mg_cam_tend.
+
+  idx = pbuf_get_index('AST') ; call pbuf_get_field(pbuf, idx, liqcldf)
+
+  ! Clip the liquid cloud fraction to avoid division by zero.
+  ! This treatment follows the subroutine micro_mg2_0:micro_mg_tend.
+
+  lcldm(:ncol,:) = max( liqcldf(:ncol,:), mincld )
+
+  ! Calculate air density, to be used in unit conversion from 1/kg to 1/m3
+  ! following the subroutine micro_mg2_0:micro_mg_tend.
+
+  rho(:ncol,:) = state%pmid(:ncol,:) / ( rair * state%t(:ncol,:) )
+
+  ! Now, calculate the in-cloud droplet number concentration
+
+  call cnst_get_ind( 'NUMLIQ', ixnumliq )
+  ncic(:ncol,:) = state%q(:ncol,:,ixnumliq) * rho(:ncol,:) / lcldm(:ncol,:)
+
+end subroutine ncic_diag
+
+subroutine tmp_numliq_update_after_activation( state_in, pbuf, dt, state_out )
+
+  use physics_types,  only: physics_state, physics_state_copy, physics_ptend, physics_ptend_init
+  use physics_update_mod, only: physics_update
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+  use constituents,   only: pcnst, cnst_get_ind
+
+  type(physics_state),intent(in)  :: state_in
+  type(physics_buffer_desc),pointer :: pbuf(:)
+  real(r8) :: dt
+  type(physics_state),intent(out) :: state_out
+
+  ! local variables
+
+  integer :: ncol, idx
+  real(r8), pointer :: npccn(:,:)
+  logical :: lq(pcnst) 
+  integer :: ixnumliq
+  type(physics_ptend) :: ptend
+
+  !--------------------------
+  ncol = state_in%ncol
+
+  ! Retrieve droplet number tendency predicted by the aerosol activation parameterization
+
+  idx = pbuf_get_index('NPCCN') ; call pbuf_get_field(pbuf, idx, npccn)
+
+  ! Transfer info to ptend
+
+  call cnst_get_ind('NUMLIQ', ixnumliq )
+  lq(:)        = .false.
+  lq(ixnumliq) = .true.
+  call physics_ptend_init(ptend, state_in%psetcols, 'actdiag', lq=lq)
+
+  ptend%q(:ncol,:,ixnumliq) = npccn(:ncol,:)
+
+  ! Use npccn to advance NUMLIQ in time; save results to the output state
+
+  call physics_state_copy( state_in, state_out )
+  call physics_update( state_out, ptend, dt )
+
+end subroutine tmp_numliq_update_after_activation
+
 end module misc_diagnostics
