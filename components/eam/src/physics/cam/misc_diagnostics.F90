@@ -306,6 +306,58 @@ subroutine ncic_diag( state, pbuf, pcols, pver, ncic )
 
 end subroutine ncic_diag
 
+
+subroutine qcic_diag( state, pbuf, pcols, pver, qcic )
+!----------------------------------------------------------------------
+! Purpose: diagnose in-cloud droplet mass concentration (unit: g/cc)
+! History: first version by Hui Wan, 2022-06
+!----------------------------------------------------------------------
+
+  use physics_types,  only: physics_state
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+  use physconst,      only: rair
+  use micro_mg_utils, only: mincld
+  use constituents,   only: cnst_get_ind
+
+  type(physics_state),intent(in),target:: state
+  type(physics_buffer_desc),pointer    :: pbuf(:)
+  integer,                  intent(in) :: pcols
+  integer,                  intent(in) :: pver
+  real(r8),                intent(out) :: qcic(pcols,pver)
+
+  integer :: ncol, ixcldliq
+
+  integer :: idx
+  real(r8), pointer :: liqcldf(:,:)  ! liquid cloud fraction 
+
+  real(r8) :: lcldm(pcols,pver)      ! liquid cloud fraction, clipped to mincld
+  real(r8) ::   rho(pcols,pver)      ! air density 
+
+  !-----------------------
+  ncol = state%ncol
+
+  ! Assume the liquid cloud fraction (liqcldf) equals the total stratiform cloud fraction (ast).
+  ! This assumption follows the subroutine micro_mg_cam:micro_mg_cam_tend.
+
+  idx = pbuf_get_index('AST') ; call pbuf_get_field(pbuf, idx, liqcldf)
+
+  ! Clip the liquid cloud fraction to avoid division by zero.
+  ! This treatment follows the subroutine micro_mg2_0:micro_mg_tend.
+
+  lcldm(:ncol,:) = max( liqcldf(:ncol,:), mincld )
+
+  ! Calculate air density, to be used in unit conversion from 1/kg to 1/m3
+  ! following the subroutine micro_mg2_0:micro_mg_tend.
+
+  rho(:ncol,:) = state%pmid(:ncol,:) / ( rair * state%t(:ncol,:) )
+
+  ! Now, calculate the in-cloud droplet mass concentration
+
+  call cnst_get_ind( 'CLDLIQ', ixcldliq )
+  qcic(:ncol,:) = 1000._r8* state%q(:ncol,:,ixcldliq) * rho(:ncol,:) / lcldm(:ncol,:)
+
+end subroutine qcic_diag
+
 subroutine tmp_numliq_update_after_activation( state_in, pbuf, dt, state_out )
 
   use physics_types,  only: physics_state, physics_state_copy, physics_ptend, physics_ptend_init

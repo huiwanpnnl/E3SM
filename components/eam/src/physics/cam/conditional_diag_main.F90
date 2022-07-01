@@ -605,6 +605,9 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
         case ('NCIC')
           call ncic_diag( state, pbuf, pcols, pver, arrayout )
 
+        case ('QCIC')
+          call qcic_diag( state, pbuf, pcols, pver, arrayout )
+
         !-----------------------------------------------------------------------------------
         ! The following were added mostly for testing of the conditional diag functionality
         !-----------------------------------------------------------------------------------
