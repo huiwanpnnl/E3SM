@@ -2547,7 +2547,7 @@ end if
            call physics_update(state, ptend, cld_macmic_ztodt)
         end if
 
-        call cnd_diag_checkpoint( diag, 'DRIB'//trim(macmic_it), state, pbuf, cam_in, cam_out )
+        call cnd_diag_checkpoint( diag, 'DRIB'//trim(char_macmic_it), state, pbuf, cam_in, cam_out )
 
         call t_stopf ('cld_cpl__dribble')
         !--------------------------------
