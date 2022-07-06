@@ -437,6 +437,7 @@ subroutine dropmixnuc( &
    integer  :: idx1000
    logical  :: zmflag
 
+   real(r8), pointer :: ptr2d(:, :) 
 
    !-------------------------------------------------------------------------------
 
@@ -1095,6 +1096,11 @@ subroutine dropmixnuc( &
    call outfld('NDROPSRC', nsource,  pcols, lchnk)
    call outfld('NDROPMIX', ndropmix, pcols, lchnk)
    call outfld('WTKE    ', wtke,     pcols, lchnk)
+
+   call pbuf_get_field( pbuf, pbuf_get_index('NDROPSRC'), ptr2d ); ptr2d = nsource
+   call pbuf_get_field( pbuf, pbuf_get_index('NDROPMIX'), ptr2d ); ptr2d = ndropmix
+   call pbuf_get_field( pbuf, pbuf_get_index('NDROPW'  ), ptr2d ); ptr2d = wtke
+
 
    call ccncalc(state, pbuf, cs, ccn)
    do l = 1, psat

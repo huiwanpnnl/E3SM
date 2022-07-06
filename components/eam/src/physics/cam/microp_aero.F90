@@ -141,7 +141,13 @@ subroutine microp_aero_register
    use ppgrid,         only: pcols
    use physics_buffer, only: pbuf_add_field, dtype_r8
 
+   integer :: idx
+
    call pbuf_add_field('NPCCN',      'physpkg',dtype_r8,(/pcols,pver/), npccn_idx)
+
+   call pbuf_add_field('NDROPSRC',   'physpkg',dtype_r8,(/pcols,pver/), idx)
+   call pbuf_add_field('NDROPMIX',   'physpkg',dtype_r8,(/pcols,pver/), idx)
+   call pbuf_add_field('NDROPW',     'physpkg',dtype_r8,(/pcols,pver/), idx)
 
    call pbuf_add_field('RNDST',      'physpkg',dtype_r8,(/pcols,pver,4/), rndst_idx)
    call pbuf_add_field('NACON',      'physpkg',dtype_r8,(/pcols,pver,4/), nacon_idx)
