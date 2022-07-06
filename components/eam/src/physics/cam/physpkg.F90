@@ -2526,7 +2526,7 @@ end if
        !-----------------------------------------------------------------------------
        call t_startf('cld_cpl__set_state_ptend')
 
-       if ( (cld_cpl_opt > 1).and.(nstep>1) ) call set_state_and_ptend( state, pbuf, ztodt, cpair, ptend_dribble )
+       if ( (cld_cpl_opt > 1).and.(nstep>1) ) call set_state_and_ptend( state, pbuf, ztodt, cpair, ptend_dribble, cld_cpl_opt )
 
        call cnd_diag_checkpoint( diag, 'CLDRESET', state, pbuf, cam_in, cam_out )
 
@@ -2756,7 +2756,7 @@ end if
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
        call t_startf('cld_cpl__save_state')
-       if ( cld_cpl_opt > 1) call save_state_snapshot_to_pbuf(state, pbuf)
+       if ( cld_cpl_opt > 1) call save_state_snapshot_to_pbuf(state, pbuf, cld_cpl_opt)
        if ((cld_cpl_opt > 1).and.(nstep>1)) call physics_ptend_dealloc(ptend_dribble)
        call t_stopf('cld_cpl__save_state')
  

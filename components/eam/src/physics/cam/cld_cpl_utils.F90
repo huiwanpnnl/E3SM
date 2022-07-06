@@ -12,24 +12,33 @@ contains
 
      use physics_buffer, only: pbuf_add_field, dtype_r8
      use ppgrid,         only: pcols, pver
+     use constituents,     only: pcnst
 
      integer, intent(in) :: cld_cpl_opt
 
      integer :: idxtmp   ! pbuf component index
  
-     if (cld_cpl_opt > 1) then
+     select case (cld_cpl_opt)
+     case (2) 
         call pbuf_add_field(    'T_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
         call pbuf_add_field(    'Q_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
         call pbuf_add_field(   'QL_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
         call pbuf_add_field(   'QI_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
         call pbuf_add_field(   'NL_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
         call pbuf_add_field(   'NI_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
-     end if
+
+     case (3)
+        call pbuf_add_field(    'T_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver/), idxtmp)
+        call pbuf_add_field( 'CNST_AFT_MACMIC', 'global', dtype_r8, (/pcols,pver,pcnst/), idxtmp)
+
+     case default
+        call endrun('cld_cpl_register: unrecognize value of cld_cpl_opt')
+     end select
 
    end subroutine cld_cpl_register
 
    !---------------------------------------------------------------------------------------------------------
-   subroutine set_state_and_ptend( state, pbuf, ztodt, cpair, ptend_dribble )
+   subroutine set_state_and_ptend( state, pbuf, ztodt, cpair, ptend_dribble, cld_cpl_opt )
 
    use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
    use physics_buffer,   only: physics_buffer_desc, pbuf_get_field
@@ -41,12 +50,13 @@ contains
    type(physics_buffer_desc), pointer :: pbuf(:)
    real(r8), intent(in)               :: ztodt, cpair
    type(physics_ptend),intent(out)    :: ptend_dribble
+   integer, intent(in)                :: cld_cpl_opt
 
    ! local variables
 
    integer :: ifld
    integer :: ncol
-   integer :: ixcldliq, ixcldice, ixnumliq, ixnumice, ixq
+   integer :: ixcldliq, ixcldice, ixnumliq, ixnumice, ixq, ix
    logical :: lq(pcnst)
 
     real(r8), pointer, dimension(:,:) :: t_after_macmic
@@ -58,6 +68,9 @@ contains
 
     !-----------------------------------------------
     ncol = state%ncol
+
+    select case (cld_cpl_opt)
+    case (2)
 
     ! Look up tracer indices
 
@@ -103,32 +116,62 @@ contains
     state%q(:ncol,:pver,ixnumliq) = nl_after_macmic(:ncol,:pver)
     state%q(:ncol,:pver,ixnumice) = ni_after_macmic(:ncol,:pver)
 
+   case (3)
+    !-----------------------------------------
+    ! Dribble T and all constituents
+    !-----------------------------------------
+    ! Initialize ptend_dribble
+
+    lq(:) = .TRUE.
+    call physics_ptend_init(ptend_dribble, state%psetcols, 'macmic_dribble_tend', ls=.true., lq=lq)
+
+    ! Calculate T tendency, save in ptend_dribble, then reset state back to an old snapshot
+
+    ifld = pbuf_get_index( 'T_AFT_MACMIC'); call pbuf_get_field(pbuf, ifld, t_after_macmic )
+    ptend_dribble%s(:ncol,:pver)  = ( state%t(:ncol,:pver) - t_after_macmic(:ncol,:pver) ) / ztodt *cpair
+    state%t(:ncol,:pver)          =  t_after_macmic(:ncol,:pver)
+
+    ! Do the same for all constituents
+
+    ifld = pbuf_get_index( 'CNST_AFT_MACMIC')
+    do ix = 1,pcnst
+       call pbuf_get_field(pbuf, ifld, q_after_macmic, start=(/1,1,ix/), kount=(/pcols,pver,1/) )
+       ptend_dribble%q(:ncol,:pver,ix) = (state%q(:ncol,:pver,ix) - q_after_macmic(:ncol,:pver)) / ztodt
+       state%q(:ncol,:pver,ix)         =  q_after_macmic(:ncol,:pver)
+    end do
+
+   end select
+
    end subroutine set_state_and_ptend
 
    !---------------------------------------------------------------------------------------------------
-   subroutine save_state_snapshot_to_pbuf( state, pbuf )
+   subroutine save_state_snapshot_to_pbuf( state, pbuf, cld_cpl_opt )
 
      use physics_types,  only: physics_state
      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
      use ppgrid,         only: pcols, pver
-     use constituents,   only: cnst_get_ind
+     use constituents,   only: cnst_get_ind, pcnst
 
      ! Arguments
 
      type(physics_state), intent(in)    :: state
      type(physics_buffer_desc), pointer :: pbuf(:)
+     integer, intent(in) :: cld_cpl_opt
 
      ! Local variables
 
      real(r8), pointer, dimension(:,:) :: ptr2d
      character(len=20) :: varname
-     integer :: ncol, ix
+     integer :: ncol, ix, ifld
 
      !---------------------
      ncol = state%ncol
 
      varname = 'T_AFT_MACMIC'; call pbuf_get_field(pbuf, pbuf_get_index(trim(varname)), ptr2d)
      ptr2d(:ncol,:pver) = state%t(:ncol,:pver)
+
+   select case (cld_cpl_opt)
+   case (2) 
 
      varname = 'Q_AFT_MACMIC'; call pbuf_get_field(pbuf, pbuf_get_index(trim(varname)), ptr2d)
      call cnst_get_ind('Q',      ix); ptr2d(:ncol,:pver) = state%q(:ncol,:pver,ix)
@@ -144,6 +187,16 @@ contains
 
      varname = 'NI_AFT_MACMIC'; call pbuf_get_field(pbuf, pbuf_get_index(trim(varname)), ptr2d)
      call cnst_get_ind('NUMICE', ix); ptr2d(:ncol,:pver) = state%q(:ncol,:pver,ix)
+
+   case(3)
+
+     ifld = pbuf_get_index( 'CNST_AFT_MACMIC')
+     do ix = 1,pcnst
+        call pbuf_get_field(pbuf, ifld, ptr2d, start=(/1,1,ix/), kount=(/pcols,pver,1/))
+        ptr2d(:ncol,:pver) = state%q(:ncol,:pver,ix)
+     end do
+
+   end select
 
    end subroutine save_state_snapshot_to_pbuf
    !---------------------------------------------------------------------------------------------------------

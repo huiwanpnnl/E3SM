@@ -541,6 +541,14 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
             idx = pbuf_get_index('AST')  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
+        case('AIST')
+            idx = pbuf_get_index('AIST')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+            arrayout(:,:) = ptr2d
+
+        case('ALST')
+            idx = pbuf_get_index('ALST')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+            arrayout(:,:) = ptr2d
+
         ! aerosol-cloud interactions
 
         case('NPCCN')
