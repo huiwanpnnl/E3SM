@@ -391,6 +391,12 @@ subroutine dropmixnuc( &
    real(r8) :: alogarg
    real(r8) :: overlapp(pver), overlapm(pver) ! cloud overlap
 
+   real(r8) :: srcgrow(pcols,pver)            ! droplet number source (#/kg/s)
+   real(r8) :: srcshrk(pcols,pver)            ! droplet number source (#/kg/s)
+   real(r8) :: srcnact(pcols,pver)            ! droplet number source (#/kg/s)
+   real(r8) :: srcnclr(pcols,pver)            ! droplet number source (#/kg/s)
+   real(r8) :: srcevap(pcols,pver)            ! droplet number source (#/kg/s)
+
    real(r8) :: nsource(pcols,pver)            ! droplet number source (#/kg/s)
    real(r8) :: ndropmix(pcols,pver)           ! droplet number mixing (#/kg/s)
    real(r8) :: ndropcol(pcols)               ! column droplet number (#/m2)
@@ -522,7 +528,16 @@ subroutine dropmixnuc( &
    ndropmix(:,:) = 0._r8
    nsource(:,:) = 0._r8
 
+   srcgrow(:,:) = 0._r8
+   srcshrk(:,:) = 0._r8
+
+   srcnact(:,:) = 0._r8
+   srcnclr(:,:) = 0._r8
+
+   srcevap(:,:) = 0._r8
+   !=================================================
    ! overall_main_i_loop
+   !=================================================
    do i = 1, ncol
 
       do k = top_lev, pver-1
@@ -616,6 +631,7 @@ subroutine dropmixnuc( &
             nsource(i,k) = nsource(i,k) + qcld(k)*(cldn_tmp - cldo_tmp)/cldo_tmp*dtinv
             qcld(k)      = qcld(k)*(1._r8 + (cldn_tmp - cldo_tmp)/cldo_tmp)
             !-- sungsup
+            srcshrk(i,k) = srcshrk(i,k) + qcld(k)*(cldn_tmp - cldo_tmp)/cldo_tmp*dtinv
 
             ! convert activated aerosol to interstitial in decaying cloud
 
@@ -680,6 +696,7 @@ subroutine dropmixnuc( &
                dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
                qcld(k) = qcld(k) + dact
                nsource(i,k) = nsource(i,k) + dact*dtinv
+               srcgrow(i,k) = srcgrow(i,k) + dact*dtinv
                raercol_cw(k,mm,nsav) = raercol_cw(k,mm,nsav) + dact  ! cloud-borne aerosol
                raercol(k,mm,nsav)    = raercol(k,mm,nsav) - dact
                dum = dumc*fm(m)
@@ -837,6 +854,7 @@ subroutine dropmixnuc( &
                end do
                srcn(k)      = srcn(k) + fluxntot/(cs(i,k)*dz(i,k))
                nsource(i,k) = nsource(i,k) + fluxntot/(cs(i,k)*dz(i,k))
+               srcnact(i,k) = srcnact(i,k) + fluxntot/(cs(i,k)*dz(i,k))
 
             endif  ! (cldn(i,k) - cldn(i,kp1) > 0.01 .or. k == pver)
 
@@ -844,6 +862,7 @@ subroutine dropmixnuc( &
 
             ! no cloud
 
+            srcnclr(i,k) = srcnclr(i,k) - qcld(k)*dtinv 
             nsource(i,k) = nsource(i,k) - qcld(k)*dtinv
             qcld(k)      = 0
 
@@ -1033,6 +1052,8 @@ subroutine dropmixnuc( &
 
       ! evaporate particles again if no cloud
 
+      srcevap(i,:) = qcld(:)
+
       do k = top_lev, pver
          if (cldn(i,k) == 0._r8) then
             ! no cloud
@@ -1052,6 +1073,8 @@ subroutine dropmixnuc( &
             end do
          end if
       end do
+
+      srcevap(i,:) = ( qcld(:) - srcevap(i,:) )*dtinv
 
       ! droplet number
 
@@ -1090,7 +1113,9 @@ subroutine dropmixnuc( &
       end if
 
    end do  ! overall_main_i_loop
+   !===========================================================================
    ! end of main loop over i/longitude ....................................
+   !===========================================================================
 
    call outfld('NDROPCOL', ndropcol, pcols, lchnk)
    call outfld('NDROPSRC', nsource,  pcols, lchnk)
@@ -1100,6 +1125,12 @@ subroutine dropmixnuc( &
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPSRC'), ptr2d ); ptr2d = nsource
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPMIX'), ptr2d ); ptr2d = ndropmix
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPW'  ), ptr2d ); ptr2d = wtke
+
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCGROW'), ptr2d ); ptr2d = srcgrow
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCSHRK'), ptr2d ); ptr2d = srcshrk
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCNACT'), ptr2d ); ptr2d = srcnact
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCNCLR'), ptr2d ); ptr2d = srcnclr
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCEVAP'), ptr2d ); ptr2d = srcevap
 
 
    call ccncalc(state, pbuf, cs, ccn)
