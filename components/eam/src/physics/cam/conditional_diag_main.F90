@@ -541,7 +541,7 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
 
         case('NPCCN','NDROPSRC','NDROPMIX','NDROPW', &
              'NSRCGROW','NSRCSHRK','NSRCNACT','NSRCNCLR','NSRCEVAP', &
-             'FLUXN1','FLUXN2','FLUXN3','FLUXN4')
+             'FLUXN1','FLUXN2','FLUXN3','FLUXN4','NSRCDCLD')
             idx = pbuf_get_index( trim(adjustl(varname)) )  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 

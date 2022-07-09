@@ -397,6 +397,8 @@ subroutine dropmixnuc( &
    real(r8) :: srcnclr(pcols,pver)            ! droplet number source (#/kg/s)
    real(r8) :: srcevap(pcols,pver)            ! droplet number source (#/kg/s)
 
+   real(r8) :: srcdcld(pcols,pver)            ! cloud base fraction 
+
    real(r8) :: nsource(pcols,pver)            ! droplet number source (#/kg/s)
    real(r8) :: ndropmix(pcols,pver)           ! droplet number mixing (#/kg/s)
    real(r8) :: ndropcol(pcols)               ! column droplet number (#/m2)
@@ -538,6 +540,8 @@ subroutine dropmixnuc( &
    srcnclr(:,:) = 0._r8
 
    srcevap(:,:) = 0._r8
+
+   srcdcld(:,:) = 0._r8
 
    fluxn3d(:,:,:) = 0._r8
 
@@ -863,6 +867,7 @@ subroutine dropmixnuc( &
                srcn(k)      = srcn(k) + fluxntot/(cs(i,k)*dz(i,k))
                nsource(i,k) = nsource(i,k) + fluxntot/(cs(i,k)*dz(i,k))
                srcnact(i,k) = srcnact(i,k) + fluxntot/(cs(i,k)*dz(i,k))
+               srcdcld(i,k) = dumc 
 
             endif  ! (cldn(i,k) - cldn(i,kp1) > 0.01 .or. k == pver)
 
@@ -1139,6 +1144,8 @@ subroutine dropmixnuc( &
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCNACT'), ptr2d ); ptr2d = srcnact
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCNCLR'), ptr2d ); ptr2d = srcnclr
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCEVAP'), ptr2d ); ptr2d = srcevap
+
+   call pbuf_get_field( pbuf, pbuf_get_index('NSRCDCLD'), ptr2d ); ptr2d = srcdcld
 
    do m = 1, ntot_amode
       write(varname,'(a,i1)') 'FLUXN', m
