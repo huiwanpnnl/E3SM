@@ -422,6 +422,7 @@ subroutine dropmixnuc( &
    real(r8), allocatable :: fn(:)              ! activation fraction for aerosol number
    real(r8), allocatable :: fm(:)              ! activation fraction for aerosol mass
 
+   real(r8), allocatable :: fluxn3d(:,:,:)     ! number  activation fraction flux (cm/s): (pcols, pver, ntot_amode)
    real(r8), allocatable :: fluxn(:)           ! number  activation fraction flux (cm/s)
    real(r8), allocatable :: fluxm(:)           ! mass    activation fraction flux (cm/s)
    real(r8)              :: flux_fullact(pver) ! 100%    activation fraction flux (cm/s)
@@ -444,6 +445,7 @@ subroutine dropmixnuc( &
    logical  :: zmflag
 
    real(r8), pointer :: ptr2d(:, :) 
+   character(len=20) :: varname
 
    !-------------------------------------------------------------------------------
 
@@ -497,6 +499,7 @@ subroutine dropmixnuc( &
       vaerosol(ntot_amode),           &
       fn(ntot_amode),                 &
       fm(ntot_amode),                 &
+      fluxn3d(pcols,pver,ntot_amode), &
       fluxn(ntot_amode),              &
       fluxm(ntot_amode)               )
 
@@ -535,6 +538,10 @@ subroutine dropmixnuc( &
    srcnclr(:,:) = 0._r8
 
    srcevap(:,:) = 0._r8
+
+   fluxn3d(:,:,:) = 0._r8
+
+
    !=================================================
    ! overall_main_i_loop
    !=================================================
@@ -837,6 +844,7 @@ subroutine dropmixnuc( &
 
                do m = 1, ntot_amode
                   mm = mam_idx(m,0)
+                  fluxn3d(i,k,m) = fluxn(m)
                   fluxn(m) = fluxn(m)*dumc
                   fluxm(m) = fluxm(m)*dumc
                   nact(k,m) = nact(k,m) + fluxn(m)*dum
@@ -1132,7 +1140,12 @@ subroutine dropmixnuc( &
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCNCLR'), ptr2d ); ptr2d = srcnclr
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCEVAP'), ptr2d ); ptr2d = srcevap
 
+   do m = 1, ntot_amode
+      write(varname,'(a,i1)') 'FLUXN', m
+      call pbuf_get_field( pbuf, pbuf_get_index(trim(adjustl(varname))), ptr2d ); ptr2d = fluxn3d(:,:,m)
+   end do
 
+   !--------------------------------------------------------------------
    call ccncalc(state, pbuf, cs, ccn)
    do l = 1, psat
       call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
@@ -1197,6 +1210,7 @@ subroutine dropmixnuc( &
       vaerosol,   &
       fn,         &
       fm,         &
+      fluxn3d,    &
       fluxn,      &
       fluxm       )
 

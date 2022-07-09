@@ -141,7 +141,8 @@ subroutine microp_aero_register
    use ppgrid,         only: pcols
    use physics_buffer, only: pbuf_add_field, dtype_r8
 
-   integer :: idx
+   integer :: idx, m, nmodes
+   character(len=20) :: varname
 
    call pbuf_add_field('NPCCN',      'physpkg',dtype_r8,(/pcols,pver/), npccn_idx)
 
@@ -154,6 +155,14 @@ subroutine microp_aero_register
    call pbuf_add_field('NSRCNACT',   'physpkg',dtype_r8,(/pcols,pver/), idx)
    call pbuf_add_field('NSRCNCLR',   'physpkg',dtype_r8,(/pcols,pver/), idx)
    call pbuf_add_field('NSRCEVAP',   'physpkg',dtype_r8,(/pcols,pver/), idx)
+
+   call rad_cnst_get_info(0, nmodes=nmodes)
+   if(masterproc)write(iulog,*)'microp_aero_register: nmodes = ', nmodes 
+   do m = 1,nmodes
+      write(varname,'(a,i1)') 'FLUXN',m
+      if(masterproc)write(iulog,*)'microp_aero_register: pbuf varname = ', trim(adjustl(varname))
+      call pbuf_add_field( trim(adjustl(varname)),'physpkg',dtype_r8,(/pcols,pver/), idx)
+   end do
 
    call pbuf_add_field('RNDST',      'physpkg',dtype_r8,(/pcols,pver,4/), rndst_idx)
    call pbuf_add_field('NACON',      'physpkg',dtype_r8,(/pcols,pver,4/), nacon_idx)
