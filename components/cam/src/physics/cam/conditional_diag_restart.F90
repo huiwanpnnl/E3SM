@@ -181,6 +181,8 @@ contains
   !------------------------------------------------------------------------------------------------
   ! Purpose: add variables to the restart file for conditional sampling and diagnostics.
   ! History: First version by Hui Wan, PNNL, 2021-04
+  !          Hui Wan, PNNL, 2022-12: for branch runs, if a variable is not found in restart file,
+  !          assign fillvalues instead of attempting to read from restart file. 
   !------------------------------------------------------------------------------------------------
 
   use cam_abortutils,   only: endrun
@@ -542,7 +544,6 @@ contains
 
      if (nver==1) then
 
-        tmpfield_2d = fillvalue
         !--------------------------------------------
         ! get iodesc needed by pio_read_darray calls
         !--------------------------------------------
@@ -556,7 +557,9 @@ contains
         !----------------------------
         write(varname,'(a,i2.2,a)') 'cnd',icnd,'_metric'
         ierr = pio_inq_varid(File, trim(varname), vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
+
+        tmpfield_2d = fillvalue
+        if (lread(ierr)) call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
 
         do lchnk = begchunk,endchunk
            phys_diag(lchnk)%cnd(icnd)% metric(:,1) = tmpfield_2d(:,lchnk)
@@ -567,7 +570,9 @@ contains
         !----------------------------
         write(varname,'(a,i2.2,a)') 'cnd',icnd,'_flag'
         ierr = pio_inq_varid(File, trim(varname), vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
+
+        tmpfield_2d = 0._r8
+        if (lread(ierr)) call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
 
         do lchnk = begchunk,endchunk
            phys_diag(lchnk)%cnd(icnd)% flag(:,1) = tmpfield_2d(:,lchnk)
@@ -585,7 +590,6 @@ contains
         file_dims(file_nhdims+1) = nver
 
         allocate( tmpfield_3d(pcols,nver,begchunk:endchunk) )
-        tmpfield_3d = fillvalue
         
         !-------------------------------
         ! read and unpack metric values 
@@ -593,7 +597,8 @@ contains
         write(varname,'(a,i2.2,a)') 'cnd',icnd,'_metric'
         ierr = pio_inq_varid(File, trim(varname), vardesc)
 
-        call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
+        tmpfield_3d = fillvalue
+        if (lread(ierr)) call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
 
         do lchnk = begchunk, endchunk
            phys_diag(lchnk)%cnd(icnd)% metric(:,:) = tmpfield_3d(:,:,lchnk)
@@ -605,7 +610,8 @@ contains
         write(varname,'(a,i2.2,a)') 'cnd',icnd,'_flag'
         ierr = pio_inq_varid(File, trim(varname), vardesc)
 
-        call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
+        tmpfield_3d = 0._r8
+        if (lread(ierr)) call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
 
         do lchnk = begchunk, endchunk
            phys_diag(lchnk)%cnd(icnd)% flag(:,:) = tmpfield_3d(:,:,lchnk)
@@ -628,8 +634,6 @@ contains
 
      if (nver==1) then
 
-        tmpfield_2d = fillvalue
-
         !--------------------------------------------
         ! get iodesc needed by pio_read_darray calls
         !--------------------------------------------
@@ -648,7 +652,9 @@ contains
 
               write(varname,'(3(a,i2.2))') 'cnd',icnd, '_qoi',iqoi, '_',ichkpt
               ierr = pio_inq_varid(File, trim(varname), vardesc)
-              call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
+
+              tmpfield_2d = fillvalue
+              if (lread(ierr)) call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
 
               do lchnk = begchunk,endchunk
                  phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% val(:,1,ichkpt) = tmpfield_2d(:,lchnk)
@@ -672,7 +678,9 @@ contains
 
                  write(varname,'(3(a,i2.2))') 'cnd',icnd, '_qoi',iqoi, '_inc',ichkpt
                  ierr = pio_inq_varid(File, trim(varname), vardesc)
-                 call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
+
+                 tmpfield_2d = fillvalue
+                 if (lread(ierr)) call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
 
                  do lchnk = begchunk,endchunk
                     phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% inc(:,1,ichkpt) = tmpfield_2d(:,lchnk)
@@ -684,7 +692,9 @@ contains
  
               write(varname, '(2(a,i2.2),a)') 'cnd',icnd, '_qoi',iqoi, '_old'
               ierr = pio_inq_varid(File, trim(varname), vardesc)
-              call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
+
+              tmpfield_2d = fillvalue
+              if (lread(ierr)) call pio_read_darray(File, vardesc, iodesc, tmpfield_2d, ierr)
 
               do lchnk = begchunk,endchunk
                  phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% old(:,1) = tmpfield_2d(:,lchnk)
@@ -706,7 +716,6 @@ contains
         file_dims(file_nhdims+1) = nver
 
         allocate( tmpfield_3d(pcols,nver,begchunk:endchunk) )
-        tmpfield_3d = fillvalue
         
         !------------------------------
         ! read and unpack field values 
@@ -719,7 +728,8 @@ contains
               write(varname,'(3(a,i2.2))') 'cnd',icnd, '_qoi',iqoi, '_',ichkpt
               ierr = pio_inq_varid(File, trim(varname), vardesc)
 
-              call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
+              tmpfield_3d = fillvalue
+              if (lread(ierr)) call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
 
               do lchnk = begchunk,endchunk
                  phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% val(:,:,ichkpt) = tmpfield_3d(:,:,lchnk)
@@ -743,7 +753,8 @@ contains
               write(varname,'(3(a,i2.2))') 'cnd',icnd, '_qoi',iqoi, '_inc',ichkpt
               ierr = pio_inq_varid(File, trim(varname), vardesc)
 
-              call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
+              tmpfield_3d = fillvalue
+              if (lread(ierr)) call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
 
               do lchnk = begchunk,endchunk
                  phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% inc(:,:,ichkpt) = tmpfield_3d(:,:,lchnk)
@@ -759,7 +770,8 @@ contains
               write(varname, '(2(a,i2.2),a)') 'cnd',icnd, '_qoi',iqoi, '_old'
               ierr = pio_inq_varid(File, trim(varname), vardesc)
 
-              call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
+              tmpfield_3d = fillvalue
+              if (lread(ierr)) call cam_grid_read_dist_array(File, physgrid, arry_dims(1:3), file_dims(1:file_nhdims+1), tmpfield_3d, vardesc)
 
               do lchnk = begchunk,endchunk
                  phys_diag(lchnk)%cnd(icnd)%qoi(iqoi)% old(:,:) = tmpfield_3d(:,:,lchnk)
@@ -778,5 +790,37 @@ contains
   end do
  
   end subroutine cnd_diag_read_restart
+
+  !-----------------------------------------------------------------------
+  ! Function for determining whether to read an array from restart file
+  !-----------------------------------------------------------------------
+  logical function lread(ierr)
+
+    use cam_control_mod, only: nsrest
+    use pio, only: pio_noerr
+
+    implicit none
+
+    integer,intent(in) :: ierr
+
+    ! If this is a branch run and the variable is not found in restart file,
+    ! do not attempt to read.
+
+    if ( (nsrest==3).and.(ierr/=PIO_NOERR) ) then
+
+       lread = .false.
+
+    ! Otherwise, we are in one of the following situations:
+    !  - This is a branch run and the variable has been found.
+    !  - This is a restart run, in which case we should make the attempt to read 
+    !    the variable regardless of the value of ierr. In the case of ierr/=PIO_NOERR, 
+    !    we will run into an error when reading, and the simulation will abort (as it should). 
+    else
+
+       lread = .true.
+
+    end if
+ 
+  end function
 
 end module conditional_diag_restart
