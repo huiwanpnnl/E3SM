@@ -181,8 +181,6 @@ contains
   !------------------------------------------------------------------------------------------------
   ! Purpose: add variables to the restart file for conditional sampling and diagnostics.
   ! History: First version by Hui Wan, PNNL, 2021-04
-  !          Hui Wan, PNNL, 2022-12: for branch runs, if a variable is not found in restart file,
-  !          assign fillvalues instead of attempting to read from restart file. 
   !------------------------------------------------------------------------------------------------
 
   use cam_abortutils,   only: endrun
@@ -482,12 +480,16 @@ contains
                                     pcols, fillvalue, file                 )! in, in, inout 
   !------------------------------------------------------------------------------------------------
   ! Purpose: read variables for conditional sampling and budget analysis from restart file
-  ! History: First version by Hui Wan, PNNL, 2021-04
+  ! History: Hui Wan, PNNL, 2021-04: first version
+  !          Hui Wan, PNNL, 2022-12: for branch runs, if a variable is not found in restart file,
+  !          assign fillvalues instead of attempting to read from restart file. 
   !------------------------------------------------------------------------------------------------
 
   use cam_abortutils,   only: endrun
   use conditional_diag, only: cnd_diag_info, cnd_diag_t
   use pio,              only: file_desc_t, io_desc_t, var_desc_t, pio_double, pio_read_darray, pio_inq_varid
+  use pio,              only: pio_seterrorhandling, pio_bcast_error
+  use cam_control_mod,  only: nsrest
   use cam_grid_support, only: cam_grid_get_decomp, cam_grid_read_dist_array
   use shr_kind_mod,     only: r8 => shr_kind_r8
 
@@ -511,7 +513,7 @@ contains
   type(io_desc_t), pointer :: iodesc
   type(var_desc_t) :: vardesc
 
-  integer :: ierr
+  integer :: ierr, err_handling
   integer :: lchnk
   integer :: ncnd, nchkpt, nqoi, icnd, ichkpt, iqoi, nver
 
@@ -525,6 +527,8 @@ contains
   !----------------------------------------
 
   if (cnd_diag_info%ncnd <= 0 ) return
+
+  if (nsrest==3) call pio_seterrorhandling(File,PIO_BCAST_ERROR,err_handling)
 
   !---------------------------------------------------------------
   ! Gather dimension info and save in local variables
@@ -789,6 +793,8 @@ contains
     end if 
   end do
  
+  if (nsrest==3) call pio_seterrorhandling(File,err_handling)
+
   end subroutine cnd_diag_read_restart
 
   !-----------------------------------------------------------------------
