@@ -1293,7 +1293,7 @@ and the masked values will be send to history buffer.
 Default: none
 </entry>
 
-<entry id="qoi_chkpt" type="char*10(99)"  category="history"
+<entry id="qoi_chkpt" type="char*10(250)"  category="history"
        group="conditional_diag_nl" valid_values="" >
 Checkpoints at which QoIs will be monitored.
 Default: none
@@ -1318,7 +1318,7 @@ if so, wet or dry.
 Default: none
 </entry>
 
-<entry id="chkpt_x_dp" type="integer(99)"  category="history"
+<entry id="chkpt_x_dp" type="integer(250)"  category="history"
        group="conditional_diag_nl" valid_values="" >
 Whether QoIs at a checkpoint should be multiplied by dp 
 for output if applicable; if so, wet or dry.
