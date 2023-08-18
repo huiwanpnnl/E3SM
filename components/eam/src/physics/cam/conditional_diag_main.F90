@@ -523,40 +523,26 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
             idx = pbuf_get_index('tke')  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
-        case('UPWP')
-            idx = pbuf_get_index('UPWP')  ; call pbuf_get_field( pbuf, idx, ptr2d )
-            arrayout(:,:) = ptr2d
-
-        case('VPWP')
-            idx = pbuf_get_index('VPWP')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+        case('UPWP','VPWP')
+            idx = pbuf_get_index( trim(adjustl(varname)) )  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
         ! cloud frations
 
-        case('CLD')
-            idx = pbuf_get_index('CLD')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+        case('CLD','AST','ALST','AIST')
+            idx = pbuf_get_index( trim(adjustl(varname)) )  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
-        case('AST')
-            idx = pbuf_get_index('AST')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+        ! aerosol-cloud interactions
+
+        case('NPCCN','NDROPSRC','NDROPMIX','NDROPW')
+            idx = pbuf_get_index( trim(adjustl(varname)) ); call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
         ! cloud microphysic
 
-        case('DEI')
-            idx = pbuf_get_index('DEI')  ; call pbuf_get_field( pbuf, idx, ptr2d )
-            arrayout(:,:) = ptr2d
-
-        case('DES')
-            idx = pbuf_get_index('DES')  ; call pbuf_get_field( pbuf, idx, ptr2d )
-            arrayout(:,:) = ptr2d
-
-        case('MU')
-            idx = pbuf_get_index('MU')  ; call pbuf_get_field( pbuf, idx, ptr2d )
-            arrayout(:,:) = ptr2d
-
-        case('LAMBDAC')
-            idx = pbuf_get_index('LAMBDAC')  ; call pbuf_get_field( pbuf, idx, ptr2d )
+        case('DEI','DES','MU','LAMBDAC')
+            idx = pbuf_get_index( trim(adjustl(varname)) )  ; call pbuf_get_field( pbuf, idx, ptr2d )
             arrayout(:,:) = ptr2d
 
         !-----------------------------------------------------------
@@ -594,6 +580,12 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
 
         case ('CAPE')
           call compute_cape( state, pbuf, pcols, pver, arrayout(:,1) ) ! in, in, in, out
+
+        case ('NCIC')
+          call ncic_diag( state, pbuf, pcols, pver, arrayout )
+
+        case ('QCIC')
+          call qcic_diag( state, pbuf, pcols, pver, arrayout )
 
         !-----------------------------------------------------------------------------------
         ! The following were added mostly for testing of the conditional diag functionality

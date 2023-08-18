@@ -3,10 +3,20 @@ module misc_diagnostics
 use shr_kind_mod,   only: r8 => shr_kind_r8
 
 implicit none
-public
+
+private
+
+public :: qsat_ice
+public :: supersat_q_water
+public :: supersat_q_ice
+public :: relhum_water_percent
+public :: relhum_ice_percent
+public :: compute_cape
+public :: ncic_diag
+public :: qcic_diag
+public :: tmp_numliq_update_after_activation
 
 contains
-
 
 !------------------------------------------------
 ! saturation specific humidity wrt ice.
@@ -305,7 +315,6 @@ subroutine ncic_diag( state, pbuf, pcols, pver, ncic )
   ncic(:ncol,:) = state%q(:ncol,:,ixnumliq) * rho(:ncol,:) / lcldm(:ncol,:)
 
 end subroutine ncic_diag
-
 
 subroutine qcic_diag( state, pbuf, pcols, pver, qcic )
 !----------------------------------------------------------------------
