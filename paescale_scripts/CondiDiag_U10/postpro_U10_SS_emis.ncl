@@ -1,6 +1,6 @@
 
 
-  FilePath = "/pscratch/sd/h/huiwan/sfc_cpl/cases/CondiDiag_U10/tests/XS_1x1_nmonths/run/"
+  FilePath = "/pscratch/sd/h/huiwan/vis/ncic/cases/CondiDiag_U10/tests/XS_1x1_nmonths/run/"
   FileName = "CondiDiag_U10.eam.h0.2001-01.nc"
 
   FillValueInDataFile = 0.
