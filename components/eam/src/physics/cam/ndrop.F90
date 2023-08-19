@@ -506,6 +506,7 @@ subroutine dropmixnuc( &
       end do
    end do
 
+   tendnd  = 0._r8
    factnum = 0._r8
    wtke    = 0._r8
 
