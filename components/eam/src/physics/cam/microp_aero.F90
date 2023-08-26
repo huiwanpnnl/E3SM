@@ -147,6 +147,7 @@ subroutine microp_aero_register
    call pbuf_add_field('NDROPSRC',   'physpkg',dtype_r8,(/pcols,pver/), idx)
    call pbuf_add_field('NDROPMIX',   'physpkg',dtype_r8,(/pcols,pver/), idx)
    call pbuf_add_field('NDROPW',     'physpkg',dtype_r8,(/pcols,pver/), idx)
+   call pbuf_add_field('NDROPWSB',   'physpkg',dtype_r8,(/pcols,pver/), idx)
 
    call pbuf_add_field('NSRCGROW',   'physpkg',dtype_r8,(/pcols,pver/), idx)
    call pbuf_add_field('NSRCSHRK',   'physpkg',dtype_r8,(/pcols,pver/), idx)

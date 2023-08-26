@@ -1121,6 +1121,7 @@ subroutine dropmixnuc( &
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPSRC'), ptr2d ); ptr2d = nsource
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPMIX'), ptr2d ); ptr2d = ndropmix
    call pbuf_get_field( pbuf, pbuf_get_index('NDROPW'  ), ptr2d ); ptr2d = wtke
+   call pbuf_get_field( pbuf, pbuf_get_index('NDROPWSB'), ptr2d ); ptr2d = wsub
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCGROW'), ptr2d ); ptr2d = srcgrow
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCSHRK'), ptr2d ); ptr2d = srcshrk
    call pbuf_get_field( pbuf, pbuf_get_index('NSRCNACT'), ptr2d ); ptr2d = srcnact
